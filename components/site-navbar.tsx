@@ -2,9 +2,25 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import {
+  LogOutIcon,
+  MenuIcon,
+  UserIcon,
+} from "lucide-react"
 
+import { authClient } from "@/lib/auth-client"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Sheet,
   SheetContent,
@@ -12,7 +28,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { MenuIcon } from "lucide-react"
 
 import { cn } from "cn"
 
@@ -75,16 +90,127 @@ function NavLinks({ className }: { className?: string }) {
   )
 }
 
+function UserMenu({ className }: { className?: string }) {
+  const router = useRouter()
+  const { data: session } = authClient.useSession()
+  const user = session?.user
+
+  async function handleSignOut() {
+    await authClient.signOut()
+    router.refresh()
+  }
+
+  if (!user) return null
+
+  const initials = user.name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("gap-1.5", className)}
+          />
+        }
+      >
+        <Avatar size="sm">
+          {user.image && (
+            <AvatarImage src={user.image} alt={user.name} referrerPolicy="no-referrer" />
+          )}
+          <AvatarFallback className="font-medium">{initials || <UserIcon />}</AvatarFallback>
+        </Avatar>
+        <span className="max-w-28 truncate">{user.name}</span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-medium text-foreground">
+            {user.name}
+            <p className="truncate text-xs font-normal text-muted-foreground">
+              {user.email}
+            </p>
+            {user.role && (
+              <p className="mt-1 w-fit rounded-full border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground capitalize">
+                {user.role}
+              </p>
+            )}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleSignOut}>
+          <LogOutIcon />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function AuthPlaceholder() {
+  return (
+    <div className="h-7 w-32 animate-pulse rounded-lg bg-muted" aria-hidden />
+  )
+}
+
 function AuthActions({ className }: { className?: string }) {
+  const { data: session, isPending } = authClient.useSession()
+
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <Button variant="ghost" nativeButton={false} render={<Link href="/login" />}>
+      {isPending ? (
+        <AuthPlaceholder />
+      ) : session ? (
+        <UserMenu />
+      ) : (
+        <>
+          <Button
+            variant="ghost"
+            nativeButton={false}
+            render={<Link href="/login" />}
+          >
+            Sign in
+          </Button>
+          <Button nativeButton={false} render={<Link href="/register" />}>
+            Get Started
+          </Button>
+        </>
+      )}
+    </div>
+  )
+}
+
+function MobileAuthActions() {
+  const { data: session, isPending } = authClient.useSession()
+
+  if (isPending) return null
+
+  return session ? (
+    <UserMenu className="h-9 w-full justify-start" />
+  ) : (
+    <>
+      <Button
+        variant="outline"
+        nativeButton={false}
+        render={<Link href="/login" />}
+        className="justify-center"
+      >
         Sign in
       </Button>
-      <Button nativeButton={false} render={<Link href="/register" />}>
+      <Button
+        nativeButton={false}
+        render={<Link href="/register" />}
+        className="justify-center"
+      >
         Get Started
       </Button>
-    </div>
+    </>
   )
 }
 
@@ -119,21 +245,7 @@ export function SiteNavbar() {
               </SheetHeader>
               <NavLinks className="flex-col items-stretch gap-1 px-4" />
               <div className="mt-auto flex flex-col gap-2 p-4">
-                <Button
-                  variant="outline"
-                  nativeButton={false}
-                  render={<Link href="/login" />}
-                  className="justify-center"
-                >
-                  Sign in
-                </Button>
-                <Button
-                  nativeButton={false}
-                  render={<Link href="/register" />}
-                  className="justify-center"
-                >
-                  Get Started
-                </Button>
+                <MobileAuthActions />
               </div>
             </SheetContent>
           </Sheet>

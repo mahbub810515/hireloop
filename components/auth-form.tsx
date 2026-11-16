@@ -9,11 +9,41 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PasswordInput } from "@/components/password-input"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Building2Icon, ShieldCheckIcon, UserIcon } from "lucide-react"
 import { cn } from "cn"
 
 type AuthFormMode = "login" | "register"
 
 export type AuthFormData = Record<string, FormDataEntryValue>
+
+export type UserRole = "seeker" | "recruiter" | "admin"
+
+const roleOptions: {
+  value: UserRole
+  label: string
+  description: string
+  icon: typeof UserIcon
+}[] = [
+  {
+    value: "seeker",
+    label: "Job Seeker",
+    description: "Find and apply to jobs",
+    icon: UserIcon,
+  },
+  {
+    value: "recruiter",
+    label: "Recruiter",
+    description: "Post jobs and hire",
+    icon: Building2Icon,
+  },
+  {
+    value: "admin",
+    label: "Admin",
+    description: "Manage the platform",
+    icon: ShieldCheckIcon,
+  },
+]
 
 const copy: Record<
   AuthFormMode,
@@ -43,6 +73,7 @@ export function AuthForm({
   onSubmit?: (data: AuthFormData) => void | Promise<void>
 }) {
   const [submitted, setSubmitted] = React.useState<AuthFormData | null>(null)
+  const [role, setRole] = React.useState<UserRole>("seeker")
   const isLogin = mode === "login"
   const text = copy[mode]
 
@@ -90,17 +121,53 @@ export function AuthForm({
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           {!isLogin && (
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Full name</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="John Doe"
-                autoComplete="name"
-                required
-              />
-            </div>
+            <>
+              <div className="space-y-1.5">
+                <Label>I am a</Label>
+                <RadioGroup
+                  name="role"
+                  value={role}
+                  onValueChange={(value) => setRole(value as UserRole)}
+                  required
+                  className="grid grid-cols-3 gap-2"
+                >
+                  {roleOptions.map((option) => {
+                    const selected = role === option.value
+
+                    return (
+                      <Label
+                        key={option.value}
+                        className={cn(
+                          "flex cursor-pointer flex-col items-center gap-0.5 rounded-lg border px-2 py-2.5 text-center font-medium transition outline-none hover:bg-muted/50 focus-within:ring-3 focus-within:ring-ring/50",
+                          selected
+                            ? "border-primary bg-primary/10"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        <RadioGroupItem value={option.value} className="sr-only" />
+                        <option.icon className="size-4" aria-hidden />
+                        <span className="text-xs">{option.label}</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">
+                          {option.description}
+                        </span>
+                      </Label>
+                    )
+                  })}
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="John Doe"
+                  autoComplete="name"
+                  required
+                />
+              </div>
+            </>
           )}
 
           <div className="space-y-1.5">

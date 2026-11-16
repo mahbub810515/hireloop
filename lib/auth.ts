@@ -6,6 +6,16 @@ const client = new MongoClient(process.env.BETTER_AUTH_DB_URI as string);
 const db = client.db("hireloopdb");
 
 export const auth = betterAuth({
+  user: {
+    additionalFields: {
+      role: {
+        type: ['seeker','recruiter','admin'],
+        required: true,
+        defaultValue: "seeker",
+        input: true, // allow clients to send the role on sign-up
+      },
+    },
+  },
   
   emailAndPassword: {
     enabled: true,
